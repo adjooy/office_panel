@@ -14,6 +14,39 @@ body { padding-top:var(--ops-banner-height) !important; }
 #authScreen, #bootLoading { top:var(--ops-banner-height) !important; height:calc(100dvh - var(--ops-banner-height)) !important; }
 @media(max-width:700px) { :root { --ops-banner-height:86px; } .ops-top-notice { font-size:12px; padding:10px 12px; } }
 </style>
+
+<style>
+/* Dashboard refresh */
+:root{--dash-bg:#f4f7fc;--dash-ink:#15233d;--dash-muted:#6d7b94;--dash-accent:#4f67ed}
+.main{position:relative;min-width:0;background:var(--dash-bg)!important}
+.ops-dashboard{height:100%;overflow:auto;padding:clamp(18px,3vw,42px);box-sizing:border-box;background:linear-gradient(135deg,#f5f8ff,#edf3fb)}
+.ops-dashboard[hidden],.viewer-frame[hidden]{display:none!important}
+.dash-top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.dash-eyebrow{font-size:12px;font-weight:800;letter-spacing:2px;color:#566ce5;text-transform:uppercase}
+.dash-top h1{margin:7px 0 8px;color:#172442;font-size:clamp(27px,3vw,38px);line-height:1.15}
+.dash-top p{color:#6d7b94;margin:0;font-size:14px}
+.dash-date{background:white;border:1px solid #e4eaf5;border-radius:13px;padding:11px 16px;color:#4b5b77;font-weight:650;font-size:13px}
+.dash-hero{background:linear-gradient(115deg,#1e3264,#354fb5 65%,#5c6ee4);border-radius:22px;padding:clamp(22px,3vw,36px);color:white;display:flex;align-items:center;justify-content:space-between;gap:20px;box-shadow:0 15px 32px #354fa52b}
+.dash-hero h2{font-size:clamp(22px,2.5vw,31px);line-height:1.2;margin:0 0 10px}
+.dash-hero p{color:#dbe4ff;font-size:14px;line-height:1.6;max-width:510px;margin:0}
+.dash-hero-icon{font-size:70px;opacity:.8}
+.dash-section-head{display:flex;align-items:center;justify-content:space-between;margin:30px 0 15px}
+.dash-section-head h2{font-size:18px;color:var(--dash-ink);margin:0}
+.dash-section-head span{font-size:12px;color:var(--dash-muted)}
+.dash-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.dash-tool{border:1px solid #e3eaf5;background:white;border-radius:18px;padding:22px;text-align:left;cursor:pointer;min-height:167px;display:flex;flex-direction:column;align-items:flex-start;gap:12px;box-shadow:0 5px 18px #1d33570b;transition:transform .16s,box-shadow .16s,border-color .16s;font-family:inherit}
+.dash-tool:hover,.dash-tool:focus-visible{transform:translateY(-3px);box-shadow:0 12px 30px #1d33571f;border-color:#b9c6ff;outline:none}
+.dash-tool .tool-icon{width:46px;height:46px;border-radius:13px;background:var(--tint,#eef2ff);color:var(--tone,#5266dd);display:grid;place-items:center;font-size:24px;font-weight:800}
+.dash-tool strong{font-size:16px;color:#172442}
+.dash-tool small{font-size:12px;color:#74819a;line-height:1.5}
+.dash-tool .tool-open{margin-top:auto;color:#5367d7;font-size:12px;font-weight:750}
+.dash-foot{margin-top:28px;color:#8b97ab;font-size:12px;text-align:center}
+.dash-home-btn{margin:14px 14px 8px;width:calc(100% - 28px);border:1px solid #aab9ff55;background:#5369e51a;color:inherit;border-radius:11px;padding:12px;cursor:pointer;text-align:left;font:inherit;font-weight:700}
+.dash-home-btn.active{background:#5369e5;color:white}
+.dash-home-btn:hover{border-color:#7587ff}
+@media(max-width:1050px){.dash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.dash-grid{grid-template-columns:1fr}.dash-hero-icon{display:none}.dash-tool{min-height:140px;padding:18px}.dash-date{width:100%;box-sizing:border-box}.ops-dashboard{padding:16px}.dash-section-head{margin-top:22px}}
+</style>
 <link rel="stylesheet" href="assets/css/base.css">
 <link rel="stylesheet" href="assets/css/shell.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -75,7 +108,7 @@ body { padding-top:var(--ops-banner-height) !important; }
 
   <button class="sidebar-toggle" id="sidebarToggle" title="Collapse sidebar" type="button">◂</button>
 
-  <nav class="menu">
+  <button type="button" id="dashHomeNav" class="dash-home-btn active">⌂ &nbsp; Dashboard Home</button>\n  <nav class="menu">
 
     <button class="menu-btn active" data-src="pages/parcel-panel/parcel-panel.html">
       <span class="menu-icon">▦</span>
@@ -126,7 +159,22 @@ body { padding-top:var(--ops-banner-height) !important; }
 
 <main class="main">
   
-  <iframe id="viewer" class="viewer-frame" title="Panel content"></iframe>
+  
+<section id="dashHome" class="ops-dashboard" aria-label="Dashboard home">
+ <header class="dash-top"><div><div class="dash-eyebrow">Operations Workspace</div><h1>Dashboard Overview</h1><p>Everything you need to manage daily operations, in one place.</p></div><div class="dash-date" id="dashDate"></div></header>
+ <div class="dash-hero"><div><h2>Welcome to your workspace</h2><p>Choose a tool below to open it instantly. Your existing pages and data workflows remain unchanged.</p></div><div class="dash-hero-icon" aria-hidden="true">◈</div></div>
+ <div class="dash-section-head"><h2>Quick access</h2><span>7 operational tools</span></div>
+ <div class="dash-grid">
+  <button class="dash-tool" data-open="pages/parcel-panel/parcel-panel.html" style="--tint:#eaf0ff;--tone:#4e65e4"><span class="tool-icon">▦</span><strong>Parcel Panel</strong><small>View, organize and manage parcel reports.</small><span class="tool-open">Open tool ↗</span></button>
+  <button class="dash-tool" data-open="pages/payment-mail/payment-mail.html" style="--tint:#e7f8ee;--tone:#189b66"><span class="tool-icon">৳</span><strong>Payment Mail</strong><small>Prepare payment-related messages quickly.</small><span class="tool-open">Open tool ↗</span></button>
+  <button class="dash-tool" data-open="pages/Pickup-Mail/index.html" style="--tint:#fff1e4;--tone:#df8738"><span class="tool-icon">P</span><strong>Pickup Mail</strong><small>Work with pickup requests and mail.</small><span class="tool-open">Open tool ↗</span></button>
+  <button class="dash-tool" data-open="pages/return-mail/return-mail.html" style="--tint:#ffe9ee;--tone:#d85876"><span class="tool-icon">↩</span><strong>Return Mail</strong><small>Handle return-related communication.</small><span class="tool-open">Open tool ↗</span></button>
+  <button class="dash-tool" data-open="pages/cid-extractor/cid-extractor.html" style="--tint:#e8f8fc;--tone:#168da6"><span class="tool-icon">⌕</span><strong>CID Extractor</strong><small>Extract consignment IDs with ease.</small><span class="tool-open">Open tool ↗</span></button>
+  <button class="dash-tool" data-open="pages/rider-km-tracker/rider-km-tracker.html" style="--tint:#f2edff;--tone:#8557c9"><span class="tool-icon">🏍</span><strong>Rider KM Tracker</strong><small>Access rider distance tracking.</small><span class="tool-open">Open tool ↗</span></button>
+  <button class="dash-tool" data-open="pages/return-hold-verification/return-hold-verification.html" style="--tint:#fff5dd;--tone:#bc8a1e"><span class="tool-icon">☑</span><strong>Return &amp; Hold Verification</strong><small>Review return and hold verification tasks.</small><span class="tool-open">Open tool ↗</span></button>
+ </div><footer class="dash-foot">Operations Management Panel · Secure workspace</footer>
+</section>
+\n  <iframe id="viewer" class="viewer-frame" title="Panel content" hidden></iframe>
 </main>
 
 </div>
@@ -248,29 +296,39 @@ function initPanel(){
   }catch(e){}
 
   const viewer = document.getElementById('viewer');
+  const home = document.getElementById('dashHome');
+  const homeBtn = document.getElementById('dashHomeNav');
   const buttons = document.querySelectorAll('.menu-btn');
+  const dateEl = document.getElementById('dashDate');
+  if(dateEl) dateEl.textContent = new Intl.DateTimeFormat('en-GB',{weekday:'short',day:'numeric',month:'long',year:'numeric'}).format(new Date());
 
-  function loadPage(btn){
-    buttons.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    viewer.src = btn.dataset.src;
-    try{ localStorage.setItem('opsPanelLastPage', btn.dataset.src); }catch(e){}
+  function loadHome(){
+    buttons.forEach(b=>b.classList.remove('active'));
+    homeBtn.classList.add('active');
+    home.hidden=false;
+    viewer.hidden=true;
+    viewer.removeAttribute('src');
+    try{localStorage.setItem('opsPanelLastPage','dashboard')}catch(e){}
   }
-
-  buttons.forEach(btn=>{
-    btn.addEventListener('click', ()=> loadPage(btn));
+  function loadPage(btn){
+    if(!btn)return loadHome();
+    buttons.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    homeBtn.classList.remove('active');
+    home.hidden=true;
+    viewer.hidden=false;
+    viewer.src=btn.dataset.src;
+    try{localStorage.setItem('opsPanelLastPage',btn.dataset.src)}catch(e){}
+  }
+  homeBtn.addEventListener('click',loadHome);
+  buttons.forEach(btn=>btn.addEventListener('click',()=>loadPage(btn)));
+  document.querySelectorAll('.dash-tool').forEach(tool=>{
+    tool.addEventListener('click',()=>loadPage(Array.from(buttons).find(b=>b.dataset.src===tool.dataset.open)));
   });
-
-  let startBtn = buttons[0];
-  try{
-    const last = localStorage.getItem('opsPanelLastPage');
-    if(last){
-      const match = Array.from(buttons).find(b => b.dataset.src === last);
-      if(match) startBtn = match;
-    }
-  }catch(e){}
-
-  loadPage(startBtn);
+  let last='dashboard';
+  try{last=localStorage.getItem('opsPanelLastPage')||'dashboard'}catch(e){}
+  const saved=Array.from(buttons).find(b=>b.dataset.src===last);
+  if(saved)loadPage(saved);else loadHome();
 }
 </script>
 
