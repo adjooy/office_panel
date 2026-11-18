@@ -64,6 +64,55 @@ body { padding-top:var(--ops-banner-height) !important; }
 <link rel="stylesheet" href="assets/css/shell.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+<style>
+/* Compact, viewport-aware dashboard */
+html,body{margin:0}
+#appRoot.app{width:100%!important}
+#appRoot .main{overflow:hidden}
+.ops-dashboard{padding:clamp(10px,1.5vh,20px) clamp(14px,2vw,30px)!important;overflow:auto}
+.dash-top{margin-bottom:clamp(8px,1.4vh,14px);gap:8px}
+.dash-top h1{font-size:clamp(20px,2.4vw,29px);margin:3px 0}
+.dash-top p{font-size:12px}
+.dash-date{padding:7px 10px;font-size:11px}
+.dash-hero{padding:clamp(12px,2vh,22px);border-radius:15px}
+.dash-hero h2{font-size:clamp(18px,2vw,24px);margin-bottom:4px}
+.dash-hero p{font-size:12px}
+.dash-hero-icon{font-size:42px}
+.dash-section-head{margin:clamp(10px,1.8vh,18px) 0 10px}
+.dash-section-head h2{font-size:16px}
+.dash-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1vw,13px)}
+.dash-tool{padding:clamp(12px,1.5vw,18px);min-height:clamp(125px,20vh,175px);gap:7px;border-radius:13px}
+.dash-tool .tool-icon{width:36px;height:36px;font-size:20px}
+.dash-tool strong{font-size:clamp(12px,1.15vw,15px)}
+.dash-tool small{font-size:11px}
+.dash-foot{margin-top:12px}
+.ops-topbar{padding:8px clamp(14px,2vw,30px)}
+@media(min-width:850px) and (min-height:590px){
+ .ops-dashboard{display:flex;flex-direction:column}
+ .dash-grid{flex:1;grid-template-rows:repeat(2,minmax(0,1fr))}
+ .dash-tool{min-height:0}
+}
+@media(max-width:849px){.dash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){
+ .dash-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .dash-tool{min-height:112px;padding:11px;gap:5px}
+ .dash-tool .tool-icon{width:30px;height:30px;font-size:17px}
+ .dash-tool small{display:none}
+ .dash-tool strong{font-size:12px}
+ .dash-hero-icon{display:none}
+ .dash-top p{display:none}
+ .dash-date{width:auto}
+ .dash-foot{display:none}
+}
+@media(max-height:650px) and (min-width:850px){
+ .dash-hero{padding:10px 16px}
+ .dash-tool{min-height:100px;padding:10px}
+ .dash-tool small{display:none}
+ .dash-top p{display:none}
+ .dash-foot{display:none}
+}
+</style>
 </head>
 <body>
 <div class="ops-top-notice" role="status" aria-label="Service notice"><span>⚠️ <strong>Service Notice:</strong> This public website is scheduled to be discontinued on 21 November 2026. Access to this version will end after that date.</span></div>
@@ -189,7 +238,7 @@ body { padding-top:var(--ops-banner-height) !important; }
   <button class="dash-tool" data-open="pages/return-hold-verification/return-hold-verification.html" style="--tint:#fff5dd;--tone:#bc8a1e"><span class="tool-icon">☑</span><strong>Return &amp; Hold Verification</strong><small>Review return and hold verification tasks.</small><span class="tool-open">Open tool ↗</span></button>
  </div><footer class="dash-foot">Operations Management Panel · Secure workspace</footer>
 </section>
-\n  <iframe id="viewer" class="viewer-frame" title="Panel content" hidden></iframe>
+  <iframe id="viewer" class="viewer-frame" title="Panel content" hidden></iframe>
 </main>
 
 </div>
@@ -287,64 +336,44 @@ let panelStarted = false;
 function initPanel(){
   if(panelStarted) return;
   panelStarted = true;
-
-  const appEl = document.getElementById('appRoot');
-  const toggleBtn = document.getElementById('sidebarToggle');
-
-  document.querySelectorAll('.menu-btn').forEach(btn=>{
-    const lbl = btn.querySelector('.menu-label');
-    if(lbl) btn.title = lbl.textContent.trim();
-  });
-
-  function setCollapsed(collapsed){
-    appEl.classList.toggle('collapsed', collapsed);
-    toggleBtn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
-    try{ localStorage.setItem('opsPanelSidebarCollapsed', collapsed ? '1' : '0'); }catch(e){}
-  }
-
-  toggleBtn.addEventListener('click', ()=>{
-    setCollapsed(!appEl.classList.contains('collapsed'));
-  });
-
-  try{
-    if(localStorage.getItem('opsPanelSidebarCollapsed') === '1') setCollapsed(true);
-  }catch(e){}
-
   const viewer = document.getElementById('viewer');
   const home = document.getElementById('dashHome');
-  const homeBtn = document.getElementById('dashHomeNav');
-  const buttons = document.querySelectorAll('.menu-btn');
   const dateEl = document.getElementById('dashDate');
-  if(dateEl) dateEl.textContent = new Intl.DateTimeFormat('en-GB',{weekday:'short',day:'numeric',month:'long',year:'numeric'}).format(new Date());
+  const tools = [...document.querySelectorAll('.dash-tool')];
+  const paths = new Set(tools.map(el=>el.dataset.open));
+  if(dateEl) dateEl.textContent = new Intl.DateTimeFormat('en-GB',{
+    weekday:'short',day:'numeric',month:'long',year:'numeric'
+  }).format(new Date());
 
-  function loadHome(){
-    buttons.forEach(b=>b.classList.remove('active'));
-    homeBtn.classList.add('active');
-    home.hidden=false;
-    viewer.hidden=true;
-    viewer.removeAttribute('src');
-    try{localStorage.setItem('opsPanelLastPage','dashboard')}catch(e){}
+  function currentRoute(){
+    const params = new URLSearchParams(location.hash.replace(/^#/, ''));
+    const page = params.get('page');
+    return paths.has(page) ? page : null;
   }
-  function loadPage(btn){
-    if(!btn)return loadHome();
-    buttons.forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    homeBtn.classList.remove('active');
-    home.hidden=true;
-    viewer.hidden=false;
-    viewer.src=btn.dataset.src;
-    try{localStorage.setItem('opsPanelLastPage',btn.dataset.src)}catch(e){}
+  function renderRoute(page){
+    const isHome = !page;
+    home.hidden = !isHome;
+    viewer.hidden = isHome;
+    if(isHome){
+      if(viewer.hasAttribute('src')) viewer.removeAttribute('src');
+    } else if(viewer.getAttribute('src') !== page){
+      viewer.setAttribute('src',page);
+    }
+    document.getElementById('topHomeBtn').textContent = isHome ? '⌂ Dashboard' : '← Dashboard';
+    try{localStorage.setItem('opsPanelLastPage',page||'dashboard')}catch(e){}
   }
-  homeBtn.addEventListener('click',loadHome);
-  document.getElementById('topHomeBtn').addEventListener('click',loadHome);
-  buttons.forEach(btn=>btn.addEventListener('click',()=>loadPage(btn)));
-  document.querySelectorAll('.dash-tool').forEach(tool=>{
-    tool.addEventListener('click',()=>loadPage(Array.from(buttons).find(b=>b.dataset.src===tool.dataset.open)));
-  });
-  let last='dashboard';
-  try{last=localStorage.getItem('opsPanelLastPage')||'dashboard'}catch(e){}
-  const saved=Array.from(buttons).find(b=>b.dataset.src===last);
-  loadHome();
+  function navigate(page){
+    const valid = paths.has(page) ? page : null;
+    const hash = valid ? '#page='+encodeURIComponent(valid) : '#home';
+    if(location.hash === hash){ renderRoute(valid); return; }
+    history.pushState({opsPage:valid},'',hash);
+    renderRoute(valid);
+  }
+  tools.forEach(el=>el.addEventListener('click',()=>navigate(el.dataset.open)));
+  document.getElementById('topHomeBtn').addEventListener('click',()=>navigate(null));
+  window.addEventListener('popstate',()=>renderRoute(currentRoute()));
+  window.addEventListener('hashchange',()=>renderRoute(currentRoute()));
+  renderRoute(currentRoute());
 }
 </script>
 
