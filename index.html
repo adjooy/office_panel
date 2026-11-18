@@ -17,6 +17,19 @@ body { padding-top:var(--ops-banner-height) !important; }
 
 <style>
 /* Dashboard refresh */
+.sidebar{display:none!important}
+.app{display:block!important;position:relative!important}
+.main{margin-left:0!important;width:100%!important;max-width:none!important;display:flex!important;flex-direction:column!important;height:100%!important}
+.ops-dashboard{flex:1;min-height:0}
+.viewer-frame{flex:1;min-height:0;width:100%;border:0}
+.ops-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px clamp(16px,3vw,40px);background:#fff;border-bottom:1px solid #e5eaf4;flex-shrink:0}
+.ops-topbar-brand{font-size:17px;font-weight:800;color:#1b2b4c}
+.ops-topbar-actions{display:flex;gap:9px}
+.ops-topbar button{border:1px solid #dce3f2;border-radius:10px;background:#f5f7fd;color:#2b3c65;padding:9px 13px;font:600 13px system-ui;cursor:pointer}
+.ops-topbar button:hover{background:#e9edfc}
+.ops-topbar .top-logout{background:#fff4f4;color:#a63345}
+@media(max-width:500px){.ops-topbar-brand{font-size:14px}.ops-topbar button{padding:8px 10px;font-size:12px}}
+
 :root{--dash-bg:#f4f7fc;--dash-ink:#15233d;--dash-muted:#6d7b94;--dash-accent:#4f67ed}
 .main{position:relative;min-width:0;background:var(--dash-bg)!important}
 .ops-dashboard{height:100%;overflow:auto;padding:clamp(18px,3vw,42px);box-sizing:border-box;background:linear-gradient(135deg,#f5f8ff,#edf3fb)}
@@ -108,7 +121,8 @@ body { padding-top:var(--ops-banner-height) !important; }
 
   <button class="sidebar-toggle" id="sidebarToggle" title="Collapse sidebar" type="button">◂</button>
 
-  <button type="button" id="dashHomeNav" class="dash-home-btn active">⌂ &nbsp; Dashboard Home</button>\n  <nav class="menu">
+  <button type="button" id="dashHomeNav" class="dash-home-btn active">⌂ &nbsp; Dashboard Home</button>
+  <nav class="menu">
 
     <button class="menu-btn active" data-src="pages/parcel-panel/parcel-panel.html">
       <span class="menu-icon">▦</span>
@@ -158,6 +172,7 @@ body { padding-top:var(--ops-banner-height) !important; }
 <!-- ================= MAIN (VIEWER) ================= -->
 
 <main class="main">
+  <div class="ops-topbar"><span class="ops-topbar-brand">◈ Operations Panel</span><div class="ops-topbar-actions"><button type="button" id="topHomeBtn">⌂ Dashboard</button><button type="button" class="top-logout" onclick="Auth.logout()">Log Out</button></div></div>
   
   
 <section id="dashHome" class="ops-dashboard" aria-label="Dashboard home">
@@ -321,6 +336,7 @@ function initPanel(){
     try{localStorage.setItem('opsPanelLastPage',btn.dataset.src)}catch(e){}
   }
   homeBtn.addEventListener('click',loadHome);
+  document.getElementById('topHomeBtn').addEventListener('click',loadHome);
   buttons.forEach(btn=>btn.addEventListener('click',()=>loadPage(btn)));
   document.querySelectorAll('.dash-tool').forEach(tool=>{
     tool.addEventListener('click',()=>loadPage(Array.from(buttons).find(b=>b.dataset.src===tool.dataset.open)));
@@ -328,7 +344,7 @@ function initPanel(){
   let last='dashboard';
   try{last=localStorage.getItem('opsPanelLastPage')||'dashboard'}catch(e){}
   const saved=Array.from(buttons).find(b=>b.dataset.src===last);
-  if(saved)loadPage(saved);else loadHome();
+  loadHome();
 }
 </script>
 
