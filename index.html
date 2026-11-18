@@ -5,12 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Operations Panel</title>
 <style>
-.ops-notice{margin:14px 0;padding:14px 17px;border:1px solid #b78b31;border-left:4px solid #f0b84b;border-radius:10px;background:#322916;color:#f7e6bc;font:14px/1.55 system-ui,Arial,sans-serif}
-.ops-notice strong{display:block;color:#ffd36d;font-size:15px;margin-bottom:4px}
-.ops-notice p{margin:0}
-.auth-card .ops-notice{margin-top:16px;text-align:left}
-.ops-notice--app{margin:12px 20px 0}
-@media(max-width:600px){.ops-notice--app{margin:10px}}
+/* Site-wide fixed service notice */
+:root { --ops-banner-height: 64px; }
+.ops-top-notice { position:fixed; top:0; left:0; right:0; z-index:2147483647; min-height:var(--ops-banner-height); box-sizing:border-box; display:flex; align-items:center; justify-content:center; gap:12px; padding:12px 20px; background:#332514; border-bottom:2px solid #e9ad42; color:#fff1d0; font:13px/1.45 system-ui,Arial,sans-serif; box-shadow:0 3px 16px #0007; text-align:center; }
+.ops-top-notice strong { color:#ffdb82; font-weight:750; }
+body { padding-top:var(--ops-banner-height) !important; }
+#appRoot { height:calc(100dvh - var(--ops-banner-height)) !important; min-height:0; }
+#authScreen, #bootLoading { top:var(--ops-banner-height) !important; height:calc(100dvh - var(--ops-banner-height)) !important; }
+@media(max-width:700px) { :root { --ops-banner-height:86px; } .ops-top-notice { font-size:12px; padding:10px 12px; } }
 </style>
 <link rel="stylesheet" href="assets/css/base.css">
 <link rel="stylesheet" href="assets/css/shell.css">
@@ -18,6 +20,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 </head>
 <body>
+<div class="ops-top-notice" role="status" aria-label="Service notice"><span>⚠️ <strong>Service Notice:</strong> This public website is scheduled to be discontinued on 21 November 2026. Access to this version will end after that date.</span></div>
+
 
 <!-- ================= BOOT / AUTH GATE ================= -->
 
@@ -48,7 +52,7 @@
 
     <button class="auth-submit" id="authSubmitBtn" onclick="Auth.submit()">Sign In</button>
 
-    <div class="ops-notice" role="status"><strong>⚠ Service Discontinuation Notice</strong><p>This public version of this server is scheduled to close on 21 November 2026. Access to this website will no longer be available after that date. We will be back after few days.</p></div>
+    
 
     <div class="auth-lock-note">🔒 Authorized users only. Sign in to access the panel.</div>
   </div>
@@ -121,7 +125,7 @@
 <!-- ================= MAIN (VIEWER) ================= -->
 
 <main class="main">
-  <div class="ops-notice ops-notice--app" role="status"><strong>⚠ Service Discontinuation Notice</strong><p>This public version of Operations Panel is scheduled to close on 21 November 2026. Access to this website will no longer be available after that date.</p></div>
+  
   <iframe id="viewer" class="viewer-frame" title="Panel content"></iframe>
 </main>
 
