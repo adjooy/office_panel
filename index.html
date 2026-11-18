@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Operations Panel</title>
+<style>
+.ops-notice{margin:14px 0;padding:14px 17px;border:1px solid #b78b31;border-left:4px solid #f0b84b;border-radius:10px;background:#322916;color:#f7e6bc;font:14px/1.55 system-ui,Arial,sans-serif}
+.ops-notice strong{display:block;color:#ffd36d;font-size:15px;margin-bottom:4px}
+.ops-notice p{margin:0}
+.auth-card .ops-notice{margin-top:16px;text-align:left}
+.ops-notice--app{margin:12px 20px 0}
+@media(max-width:600px){.ops-notice--app{margin:10px}}
+</style>
 <link rel="stylesheet" href="assets/css/base.css">
 <link rel="stylesheet" href="assets/css/shell.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -25,10 +33,6 @@
 
     <div id="authError" class="auth-error" style="display:none;"></div>
 
-    <div class="auth-field hidden" id="authNameField">
-      <label for="authName">Full Name</label>
-      <input id="authName" type="text" placeholder="Your name" autocomplete="name">
-    </div>
 
     <div class="auth-field">
       <label for="authEmail">Email</label>
@@ -40,20 +44,13 @@
         <label for="authPassword">Password</label>
         <input id="authPassword" type="password" placeholder="At least 6 characters" autocomplete="current-password" onkeydown="if(event.key==='Enter')Auth.submit()">
       </div>
-      <div class="auth-field hidden" id="authConfirmField">
-        <label for="authConfirmPassword">Confirm</label>
-        <input id="authConfirmPassword" type="password" placeholder="Repeat password" autocomplete="new-password" onkeydown="if(event.key==='Enter')Auth.submit()">
-      </div>
     </div>
 
     <button class="auth-submit" id="authSubmitBtn" onclick="Auth.submit()">Sign In</button>
 
-    <p class="auth-switch">
-      <span id="authToggleText">Don't have an account?</span>
-      <a href="#" onclick="Auth.toggleMode();return false;" id="authToggleLink">Create one</a>
-    </p>
+    <div class="ops-notice" role="status"><strong>⚠ Service Discontinuation Notice</strong><p>This public version of Operations Panel is scheduled to close on 21 November 2026. Access to this website will no longer be available after that date. Thank you for using Operations Panel.</p></div>
 
-    <div class="auth-lock-note">🔒 Sign in once here — every section in the panel uses this same login.</div>
+    <div class="auth-lock-note">🔒 Authorized users only. Sign in to access the panel.</div>
   </div>
 </div>
 
@@ -124,6 +121,7 @@
 <!-- ================= MAIN (VIEWER) ================= -->
 
 <main class="main">
+  <div class="ops-notice ops-notice--app" role="status"><strong>⚠ Service Discontinuation Notice</strong><p>This public version of Operations Panel is scheduled to close on 21 November 2026. Access to this website will no longer be available after that date.</p></div>
   <iframe id="viewer" class="viewer-frame" title="Panel content"></iframe>
 </main>
 
@@ -152,26 +150,6 @@ const fbAuth = firebase.auth();
 fbAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 const Auth = (() => {
-  let mode = 'signin'; // 'signin' | 'signup'
-
-  function toggleMode(){
-    mode = mode === 'signin' ? 'signup' : 'signin';
-    const isSignup = mode === 'signup';
-    document.getElementById('authTitle').textContent = isSignup ? 'Create your account' : 'Welcome back';
-    document.getElementById('authSub').textContent = isSignup
-      ? 'Set up your Operations Panel login in a few seconds.'
-      : 'Sign in to access the Operations Panel.';
-    document.getElementById('authSubmitBtn').textContent = isSignup ? 'Create Account' : 'Sign In';
-    document.getElementById('authToggleText').textContent = isSignup ? 'Already have an account?' : "Don't have an account?";
-    document.getElementById('authToggleLink').textContent = isSignup ? 'Sign in' : 'Create one';
-    document.getElementById('authNameField').classList.toggle('hidden', !isSignup);
-    document.getElementById('authConfirmField').classList.toggle('hidden', !isSignup);
-    document.getElementById('authRow2').classList.toggle('is-signup', isSignup);
-    document.getElementById('authName').value = '';
-    document.getElementById('authConfirmPassword').value = '';
-    hideError();
-  }
-
   function showError(msg){
     const el = document.getElementById('authError');
     el.textContent = msg;
@@ -182,36 +160,20 @@ const Auth = (() => {
   }
 
   async function submit(){
-    const name = document.getElementById('authName').value.trim();
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value;
-    const confirmPassword = document.getElementById('authConfirmPassword').value;
     hideError();
-
     if(!email || !password) return showError('Enter both email and password.');
-    if(password.length < 6) return showError('Password must be at least 6 characters.');
-
-    if(mode === 'signup'){
-      if(!name) return showError('Enter your full name.');
-      if(password !== confirmPassword) return showError('Passwords do not match.');
-    }
-
     const btn = document.getElementById('authSubmitBtn');
     btn.disabled = true;
-    const originalLabel = btn.textContent;
-    btn.textContent = mode === 'signin' ? 'Signing in…' : 'Creating account…';
+    btn.textContent = 'Signing in…';
     try{
-      if(mode === 'signin'){
-        await fbAuth.signInWithEmailAndPassword(email, password);
-      } else {
-        const cred = await fbAuth.createUserWithEmailAndPassword(email, password);
-        await cred.user.updateProfile({ displayName: name });
-      }
+      await fbAuth.signInWithEmailAndPassword(email, password);
     }catch(e){
       showError(friendlyError(e));
-      btn.textContent = originalLabel;
     }finally{
       btn.disabled = false;
+      btn.textContent = 'Sign In';
     }
   }
 
@@ -247,7 +209,7 @@ const Auth = (() => {
     }
   });
 
-  return { submit, toggleMode, logout };
+  return { submit, logout };
 })();
 
 /* =========================================================
