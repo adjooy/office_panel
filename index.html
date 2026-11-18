@@ -18,7 +18,7 @@ body { padding-top:var(--ops-banner-height) !important; }
 <style>
 /* Dashboard refresh */
 .sidebar{display:none!important}
-.app{display:block!important;position:relative!important}
+.app:not(.hidden){display:block!important;position:relative!important}
 .main{margin-left:0!important;width:100%!important;max-width:none!important;display:flex!important;flex-direction:column!important;height:100%!important}
 .ops-dashboard{flex:1;min-height:0}
 .viewer-frame{flex:1;min-height:0;width:100%;border:0}
@@ -238,7 +238,7 @@ html,body{margin:0}
   <button class="dash-tool" data-open="pages/return-hold-verification/return-hold-verification.html" style="--tint:#fff5dd;--tone:#bc8a1e"><span class="tool-icon">☑</span><strong>Return &amp; Hold Verification</strong><small>Review return and hold verification tasks.</small><span class="tool-open">Open tool ↗</span></button>
  </div><footer class="dash-foot">Operations Management Panel · Secure workspace</footer>
 </section>
-  <iframe id="viewer" class="viewer-frame" title="Panel content" hidden></iframe>
+  <iframe id="viewer" class="viewer-frame" title="Panel content" src="about:blank" hidden></iframe>
 </main>
 
 </div>
@@ -329,7 +329,7 @@ const Auth = (() => {
 })();
 
 /* =========================================================
-   PANEL (sidebar collapse + menu navigation) — only runs
+   PANEL (history-aware navigation) — only runs
    once the user is signed in.
 ========================================================= */
 let panelStarted = false;
@@ -350,15 +350,25 @@ function initPanel(){
     const page = params.get('page');
     return paths.has(page) ? page : null;
   }
+  // Replace iframe navigations instead of adding them to browser history.
+  // Only top-level Dashboard routes should be navigable with Back/Forward.
+  let displayedPage = null;
+  function setFramePage(page){
+    if(displayedPage === page) return;
+    displayedPage = page;
+    const url = page ? new URL(page, document.baseURI).href : 'about:blank';
+    try {
+      viewer.contentWindow.location.replace(url);
+    } catch(e) {
+      // Fallback for browsers that restrict iframe access.
+      viewer.src = url;
+    }
+  }
   function renderRoute(page){
     const isHome = !page;
     home.hidden = !isHome;
     viewer.hidden = isHome;
-    if(isHome){
-      if(viewer.hasAttribute('src')) viewer.removeAttribute('src');
-    } else if(viewer.getAttribute('src') !== page){
-      viewer.setAttribute('src',page);
-    }
+    setFramePage(page);
     document.getElementById('topHomeBtn').textContent = isHome ? '⌂ Dashboard' : '← Dashboard';
     try{localStorage.setItem('opsPanelLastPage',page||'dashboard')}catch(e){}
   }
