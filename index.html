@@ -137,6 +137,18 @@ html,body{margin:0!important;padding:0!important;width:100%;height:100%;overflow
 .workspace footer{text-align:center;color:#64748b;font-size:12px;line-height:1.7;padding:8px}
 @media(max-width:560px){.workspace-grid{grid-template-columns:1fr}.workspace-card{padding:16px}}
 </style>
+<style>
+/* Single-row top navigation */
+#appRoot .ops-topbar{display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:6px 10px;border-bottom:1px solid #e5eaf4!important;min-width:0;flex-shrink:0}
+.ops-topbar-brand{white-space:nowrap;flex:0 0 auto;font-size:14px}
+#appRoot .ops-topbar .ops-menu{flex:1 1 auto;min-width:0;overflow-x:auto;padding:0;border:0;gap:4px;scrollbar-width:thin}
+.ops-topbar .ops-menu button{flex:0 0 auto;white-space:nowrap;padding:6px 8px;font-size:12px;border-radius:7px}
+.ops-topbar .ops-menu .dash-tool{gap:4px}
+.ops-topbar .ops-menu .dash-tool .tool-icon{width:19px;height:19px;font-size:13px}
+.ops-topbar .top-logout{flex:0 0 auto;white-space:nowrap;padding:7px 10px}
+.ops-topbar .ops-menu button.active:hover{background:#4f67ed;color:white}
+@media(max-width:600px){#appRoot .ops-topbar{gap:6px;padding:5px 6px}.ops-topbar-brand{font-size:11px}.ops-topbar .top-logout{font-size:11px;padding:6px}}
+</style>
 </head>
 <body>
 
@@ -245,10 +257,7 @@ html,body{margin:0!important;padding:0!important;width:100%;height:100%;overflow
 <!-- ================= MAIN (VIEWER) ================= -->
 
 <main class="main">
-  <div class="ops-topbar"><span class="ops-topbar-brand">◈ AD JOY PANEL</span><div class="ops-topbar-actions"><button type="button" id="topHomeBtn">⌂ Dashboard</button><button type="button" class="top-logout" onclick="Auth.logout()">Log Out</button></div></div>
-  
-  
-<nav class="ops-menu" aria-label="Operational tools">
+  <header class="ops-topbar"><span class="ops-topbar-brand">◈ AD JOY PANEL</span><nav class="ops-menu" aria-label="Operational tools"><button type="button" id="topHomeBtn">⌂ Dashboard</button>
   <button class="dash-tool" data-open="pages/parcel-panel/parcel-panel.html" style="--tint:#eaf0ff;--tone:#4e65e4"><span class="tool-icon">▦</span><strong>Parcel Panel</strong></button>
   <button class="dash-tool" data-open="pages/payment-mail/payment-mail.html" style="--tint:#e7f8ee;--tone:#189b66"><span class="tool-icon">৳</span><strong>Payment Mail</strong></button>
   <button class="dash-tool" data-open="pages/Pickup-Mail/index.html" style="--tint:#fff1e4;--tone:#df8738"><span class="tool-icon">P</span><strong>Pickup Mail</strong></button>
@@ -256,7 +265,10 @@ html,body{margin:0!important;padding:0!important;width:100%;height:100%;overflow
   <button class="dash-tool" data-open="pages/cid-extractor/cid-extractor.html" style="--tint:#e8f8fc;--tone:#168da6"><span class="tool-icon">⌕</span><strong>CID Extractor</strong></button>
   <button class="dash-tool" data-open="pages/rider-km-tracker/rider-km-tracker.html" style="--tint:#f2edff;--tone:#8557c9"><span class="tool-icon">🏍</span><strong>Rider KM Tracker</strong></button>
   <button class="dash-tool" data-open="pages/return-hold-verification/return-hold-verification.html" style="--tint:#fff5dd;--tone:#bc8a1e"><span class="tool-icon">☑</span><strong>Backlogs Analysis</strong></button>
- </nav>
+ </nav><button type="button" class="top-logout" onclick="Auth.logout()">Log Out</button></header>
+  
+  
+
 <section id="dashHome" class="ops-dashboard" aria-label="Dashboard home">
  <div class="workspace">
   <header class="workspace-card workspace-welcome">
