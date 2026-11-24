@@ -4,16 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Operations Panel</title>
-<style>
-/* Site-wide fixed service notice */
-:root { --ops-banner-height: 64px; }
-.ops-top-notice { position:fixed; top:0; left:0; right:0; z-index:2147483647; min-height:var(--ops-banner-height); box-sizing:border-box; display:flex; align-items:center; justify-content:center; gap:12px; padding:12px 20px; background:#332514; border-bottom:2px solid #e9ad42; color:#fff1d0; font:13px/1.45 system-ui,Arial,sans-serif; box-shadow:0 3px 16px #0007; text-align:center; }
-.ops-top-notice strong { color:#ffdb82; font-weight:750; }
-body { padding-top:var(--ops-banner-height) !important; }
-#appRoot { height:calc(100dvh - var(--ops-banner-height)) !important; min-height:0; }
-#authScreen, #bootLoading { top:var(--ops-banner-height) !important; height:calc(100dvh - var(--ops-banner-height)) !important; }
-@media(max-width:700px) { :root { --ops-banner-height:86px; } .ops-top-notice { font-size:12px; padding:10px 12px; } }
-</style>
+
 
 <style>
 /* Dashboard refresh */
@@ -112,6 +103,23 @@ html,body{margin:0}
  .dash-top p{display:none}
  .dash-foot{display:none}
 }
+</style>
+<style>
+html,body{margin:0!important;padding:0!important;width:100%;height:100%;overflow:hidden}
+#appRoot.app{position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;margin:0!important;padding:0!important;border:0!important}
+#authScreen,#bootLoading{top:0!important;height:100dvh!important}
+#appRoot .main{margin:0!important;padding:0!important;border:0!important;min-height:0;gap:0!important}
+.ops-topbar{margin:0!important;border:0!important;padding:8px 14px;min-height:0}
+.ops-menu{display:flex;align-items:center;gap:5px;padding:5px 10px;background:#fff;border-bottom:1px solid #e5eaf4;overflow-x:auto;flex:0 0 auto;scrollbar-width:thin}
+.ops-menu .dash-tool{flex:0 0 auto;display:flex;flex-direction:row;align-items:center;gap:6px;min-height:0!important;padding:8px 10px;border-radius:7px;box-shadow:none;white-space:nowrap;background:#f5f7fd}
+.ops-menu .dash-tool .tool-icon{width:23px;height:23px;font-size:15px;border-radius:5px}
+.ops-menu .dash-tool strong{font-size:12px}
+.ops-menu .dash-tool:hover,.ops-menu .dash-tool:focus-visible{transform:none;background:#e9edfc}
+.ops-menu .dash-tool.active,.ops-topbar #topHomeBtn.active{background:#4f67ed;border-color:#4f67ed;color:white}
+.ops-menu .dash-tool.active strong{color:white}
+.ops-dashboard{height:auto!important;flex:1;min-height:0}
+.viewer-frame{display:block;flex:1;width:100%;height:0;min-height:0;margin:0;padding:0;border:0}
+.viewer-frame[hidden],.ops-dashboard[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -224,19 +232,20 @@ html,body{margin:0}
   <div class="ops-topbar"><span class="ops-topbar-brand">◈ AD JOY PANEL</span><div class="ops-topbar-actions"><button type="button" id="topHomeBtn">⌂ Dashboard</button><button type="button" class="top-logout" onclick="Auth.logout()">Log Out</button></div></div>
   
   
+<nav class="ops-menu" aria-label="Operational tools">
+  <button class="dash-tool" data-open="pages/parcel-panel/parcel-panel.html" style="--tint:#eaf0ff;--tone:#4e65e4"><span class="tool-icon">▦</span><strong>Parcel Panel</strong></button>
+  <button class="dash-tool" data-open="pages/payment-mail/payment-mail.html" style="--tint:#e7f8ee;--tone:#189b66"><span class="tool-icon">৳</span><strong>Payment Mail</strong></button>
+  <button class="dash-tool" data-open="pages/Pickup-Mail/index.html" style="--tint:#fff1e4;--tone:#df8738"><span class="tool-icon">P</span><strong>Pickup Mail</strong></button>
+  <button class="dash-tool" data-open="pages/return-mail/return-mail.html" style="--tint:#ffe9ee;--tone:#d85876"><span class="tool-icon">↩</span><strong>Return Mail</strong></button>
+  <button class="dash-tool" data-open="pages/cid-extractor/cid-extractor.html" style="--tint:#e8f8fc;--tone:#168da6"><span class="tool-icon">⌕</span><strong>CID Extractor</strong></button>
+  <button class="dash-tool" data-open="pages/rider-km-tracker/rider-km-tracker.html" style="--tint:#f2edff;--tone:#8557c9"><span class="tool-icon">🏍</span><strong>Rider KM Tracker</strong></button>
+  <button class="dash-tool" data-open="pages/return-hold-verification/return-hold-verification.html" style="--tint:#fff5dd;--tone:#bc8a1e"><span class="tool-icon">☑</span><strong>Backlogs Analysis</strong></button>
+ </nav>
 <section id="dashHome" class="ops-dashboard" aria-label="Dashboard home">
  <header class="dash-top"><div><div class="dash-eyebrow">Operations Workspace</div><h1>Dashboard Overview</h1><p>Everything you need to manage daily operations, in one place.</p></div><div class="dash-date" id="dashDate"></div></header>
- <div class="dash-hero"><div><h2>Welcome to your workspace</h2><p>Choose a tool below to open it instantly. Your existing pages and data workflows remain unchanged.</p></div><div class="dash-hero-icon" aria-hidden="true">◈</div></div>
- <div class="dash-section-head"><h2>Quick access</h2><span>7 operational tools</span></div>
- <div class="dash-grid">
-  <button class="dash-tool" data-open="pages/parcel-panel/parcel-panel.html" style="--tint:#eaf0ff;--tone:#4e65e4"><span class="tool-icon">▦</span><strong>Parcel Panel</strong><small>View, organize and manage parcel reports.</small><span class="tool-open">Open tool ↗</span></button>
-  <button class="dash-tool" data-open="pages/payment-mail/payment-mail.html" style="--tint:#e7f8ee;--tone:#189b66"><span class="tool-icon">৳</span><strong>Payment Mail</strong><small>Prepare payment-related messages quickly.</small><span class="tool-open">Open tool ↗</span></button>
-  <button class="dash-tool" data-open="pages/Pickup-Mail/index.html" style="--tint:#fff1e4;--tone:#df8738"><span class="tool-icon">P</span><strong>Pickup Mail</strong><small>Work with pickup requests and mail.</small><span class="tool-open">Open tool ↗</span></button>
-  <button class="dash-tool" data-open="pages/return-mail/return-mail.html" style="--tint:#ffe9ee;--tone:#d85876"><span class="tool-icon">↩</span><strong>Return Mail</strong><small>Handle return-related communication.</small><span class="tool-open">Open tool ↗</span></button>
-  <button class="dash-tool" data-open="pages/cid-extractor/cid-extractor.html" style="--tint:#e8f8fc;--tone:#168da6"><span class="tool-icon">⌕</span><strong>CID Extractor</strong><small>Extract consignment IDs with ease.</small><span class="tool-open">Open tool ↗</span></button>
-  <button class="dash-tool" data-open="pages/rider-km-tracker/rider-km-tracker.html" style="--tint:#f2edff;--tone:#8557c9"><span class="tool-icon">🏍</span><strong>Rider KM Tracker</strong><small>Access rider distance tracking.</small><span class="tool-open">Open tool ↗</span></button>
-  <button class="dash-tool" data-open="pages/return-hold-verification/return-hold-verification.html" style="--tint:#fff5dd;--tone:#bc8a1e"><span class="tool-icon">☑</span><strong>Backlogs Analysis</strong><small>Analysis backlogs hub wise with ease.</small><span class="tool-open">Open tool ↗</span></button>
- </div><footer class="dash-foot">This Panel is Created By AD Joy | @adjoy.me</footer>
+ <div class="dash-hero"><div><h2>Welcome to your workspace</h2><p>Choose a tool from the top menu to open it instantly. Your existing pages and data workflows remain unchanged.</p></div><div class="dash-hero-icon" aria-hidden="true">◈</div></div>
+ 
+ <footer class="dash-foot">This Panel is Created By AD Joy | @adjoy.me</footer>
 </section>
   <iframe id="viewer" class="viewer-frame" title="Panel content" src="about:blank" hidden></iframe>
 </main>
@@ -369,7 +378,8 @@ function initPanel(){
     home.hidden = !isHome;
     viewer.hidden = isHome;
     setFramePage(page);
-    document.getElementById('topHomeBtn').textContent = isHome ? '⌂ Dashboard' : '← Dashboard';
+    document.getElementById('topHomeBtn').classList.toggle('active', isHome);
+    tools.forEach(el => { const active = el.dataset.open === page; el.classList.toggle('active', active); if(active) el.setAttribute('aria-current','page'); else el.removeAttribute('aria-current'); });
     try{localStorage.setItem('opsPanelLastPage',page||'dashboard')}catch(e){}
   }
   function navigate(page){
