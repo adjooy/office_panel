@@ -1,7 +1,5 @@
 
-/* Parcel Panel logic — depends on assets/js/common.js (copyText) */
-
-/* GOOGLE SHEET UPLOAD CONFIG */
+/* AD JOY PANEL — Parcel & Cash Management */
 
 const SHEET_UPLOAD_URL =
   'https://script.google.com/macros/s/AKfycbzShlBOFAHx8YVZrWay1lgTJjL1SU8ENedplPmok0W9izXonJPXjhmaUYTNq06MpfuZfw/exec';
@@ -18,26 +16,10 @@ function sheetTabName(dateStr) {
 }
 
 const CATS = [
-  {
-    key: 'assigned',
-    label: 'Assigned Parcel',
-    cls: 'c0'
-  },
-  {
-    key: 'delivered',
-    label: 'Delivered Parcel',
-    cls: 'c1'
-  },
-  {
-    key: 'hold',
-    label: 'Hold Parcel',
-    cls: 'c2'
-  },
-  {
-    key: 'rto',
-    label: 'RTO Parcel',
-    cls: 'c3'
-  },
+  { key: 'assigned', label: 'Assigned Parcel', cls: 'c0' },
+  { key: 'delivered', label: 'Delivered Parcel', cls: 'c1' },
+  { key: 'hold', label: 'Hold Parcel', cls: 'c2' },
+  { key: 'rto', label: 'RTO Parcel', cls: 'c3' },
   {
     key: 'exchange',
     label: 'Exchange / Partial / Paid Return',
@@ -92,6 +74,9 @@ dropzone.addEventListener('drop', e => {
 
 resetBtn.addEventListener('click', resetCSV);
 
+
+/* RESET CSV */
+
 function resetCSV() {
   rawRows = [];
   statusRules = {};
@@ -113,9 +98,13 @@ function resetCSV() {
   resetBtn.style.display = 'none';
 }
 
+
+/* CSV PROCESSING */
+
 function handleFile(file) {
+  resetCSV();
+
   fname.textContent = file.name;
-  statusEl.style.display = 'none';
 
   Papa.parse(file, {
     header: true,
@@ -148,6 +137,9 @@ function handleFile(file) {
     }
   });
 }
+
+
+/* STATUS MAPPING */
 
 function guessRule(status) {
   const s = (status || '').toLowerCase().trim();
@@ -229,14 +221,17 @@ function rowPriority(row) {
   return 3;
 }
 
-/* DA EMPLOYEE ID NUMERIC SORTING */
+
+/* DA ID NUMERIC SORTING */
 
 function getDANumber(emp) {
   const ids = String(emp || '')
     .split(',')
     .map(id => id.trim())
     .map(id => {
-      const match = id.match(/^(?:DA\s*-\s*)?(\d+)$/i);
+      const match = id.match(
+        /^(?:DA\s*-\s*)?(\d+)$/i
+      );
 
       return match
         ? Number(match[1])
@@ -253,17 +248,17 @@ function sortByDAId(a, b) {
   if (idA < idB) return -1;
   if (idA > idB) return 1;
 
-  // If IDs are equal or missing, sort by name.
   return a.name.localeCompare(b.name, undefined, {
     numeric: true,
     sensitivity: 'base'
   });
 }
 
+
 /* GROUP PARCELS BY DA */
 
 function groupByDA() {
-  const groups = {};
+  const groups = Object.create(null);
 
   rawRows.forEach(r => {
     const rawName =
@@ -325,10 +320,11 @@ function groupByDA() {
         (a, b) => rowPriority(a) - rowPriority(b)
       )
     }))
-
-    // Sort DA cards by Employee ID, smallest first.
     .sort(sortByDAId);
 }
+
+
+/* PARCEL COLUMNS */
 
 function daCols(da) {
   return {
@@ -380,6 +376,23 @@ function daBlockToTSV(da) {
 
   return lines.join('\n');
 }
+
+
+/* HTML ESCAPE */
+
+function escapeHTML(value) {
+  return String(value ?? '').replace(
+    /[&<>"']/g,
+    c => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[c]
+  );
+}
+
 
 /* RENDER PARCEL PANEL */
 
@@ -455,7 +468,7 @@ function render() {
         <tr>
           ${CATS.map(c => `
             <td>
-              ${cols[c.key][i] || ''}
+              ${escapeHTML(cols[c.key][i] || '')}
             </td>
           `).join('')}
         </tr>
@@ -467,12 +480,12 @@ function render() {
 
         <div>
           <div class="da-name">
-            ${da.name}
+            ${escapeHTML(da.name)}
           </div>
 
           <div class="da-meta">
-            ${da.emp || ''}
-            ${da.phone ? ' · ' + da.phone : ''}
+            ${escapeHTML(da.emp || '')}
+            ${da.phone ? ' · ' + escapeHTML(da.phone) : ''}
           </div>
         </div>
 
@@ -540,7 +553,125 @@ function render() {
     };
 }
 
-/* UPLOAD TO GOOGLE SHEET */
+
+/* NORMALIZE CASH DA ID */
+
+function cashDAId(value) {
+  const match = String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[\s\u200B-\u200D\uFEFF]/g, '')
+    .replace(/[–—−]/g, '-')
+    .match(/^(?:DA-?)?(\d+)$/);
+
+  if (!match) {
+    throw new Error(
+      'Invalid or multiple DA IDs: ' + value
+    );
+  }
+
+  return 'DA-' +
+    match[1].replace(/^0+(?=\d)/, '');
+}
+
+
+/* RIDER-WISE CASH CALCULATION */
+
+function calculateRiderCash(rows) {
+
+  const totals = new Map();
+  const seen = new Map();
+
+  const eligibleStatuses = [
+    'delivered',
+    'paid_return',
+    'paidreturn',
+    'partial',
+    'exchange'
+  ];
+
+  for (const row of rows) {
+
+    const status = String(
+      row['Order Status'] || ''
+    ).trim().toLowerCase();
+
+    if (!eligibleStatuses.includes(status)) {
+      continue;
+    }
+
+    const id = cashDAId(
+      row['DA Employee Id']
+    );
+
+    const cid = String(
+      row['Consignment Id']
+    ).trim();
+
+    const raw = String(
+      row['Collected Amount'] ?? ''
+    ).trim();
+
+    if (!/^\d+(?:\.\d{1,2})?$/.test(raw)) {
+
+      throw new Error(
+        'Invalid Collected Amount: ' + cid
+      );
+
+    }
+
+    const cents = Math.round(
+      Number(raw) * 100
+    );
+
+    if (!Number.isSafeInteger(cents)) {
+
+      throw new Error(
+        'Invalid amount: ' + cid
+      );
+
+    }
+
+    const signature = id + ':' + cents;
+
+    // Prevent duplicate cash counting.
+
+    if (seen.has(cid)) {
+
+      if (seen.get(cid) !== signature) {
+
+        throw new Error(
+          'Conflicting duplicate CID: ' + cid
+        );
+
+      }
+
+      continue;
+
+    }
+
+    seen.set(cid, signature);
+
+    const total = (totals.get(id) || 0) + cents;
+
+    if (!Number.isSafeInteger(total)) {
+      throw new Error('Invalid cash total: ' + id);
+    }
+
+    totals.set(id, total);
+
+  }
+
+  return new Map(
+    [...totals].map(
+      ([id, cents]) => [id, cents / 100]
+    )
+  );
+
+}
+
+
+/* UPLOAD MESSAGE */
 
 function setUploadMsg(text, type) {
   const el = document.getElementById('uploadMsg');
@@ -557,26 +688,34 @@ function setUploadMsg(text, type) {
     text ? 'block' : 'none';
 }
 
+
+/* UPLOAD TO GOOGLE SHEET */
+
 async function uploadToSheet() {
+
   if (
     !SHEET_UPLOAD_URL ||
     SHEET_UPLOAD_URL.includes('PASTE_YOUR')
   ) {
+
     setUploadMsg(
-      'Apps Script URL এখনো বসানো হয়নি — parcel-panel.js এর SHEET_UPLOAD_URL এ তোমার deployed Web App URL বসাও।',
+      'Apps Script URL এখনো বসানো হয়নি।',
       'error'
     );
 
     return;
+
   }
 
   if (!rawRows.length) {
+
     setUploadMsg(
       'আগে একটা CSV আপলোড করো।',
       'error'
     );
 
     return;
+
   }
 
   const dateInput =
@@ -596,23 +735,56 @@ async function uploadToSheet() {
     );
 
   if (!groups.length) {
+
     setUploadMsg(
-      'কোনো DA-assigned parcel পাওয়া যায়নি, আপলোড করার কিছু নেই।',
+      'কোনো DA-assigned parcel পাওয়া যায়নি।',
       'error'
     );
 
     return;
+
   }
 
-  const records = groups.map(da => {
-    const cols = daCols(da);
 
-    return {
-      employeeId: da.emp,
-      agentName: da.name,
-      columns: cols
-    };
-  });
+  /* PREPARE PARCEL AND CASH DATA */
+
+  let records;
+
+  try {
+
+    const cash = calculateRiderCash(rawRows);
+
+    records = groups.map(da => {
+
+      const cols = daCols(da);
+
+      return {
+
+        employeeId: da.emp,
+
+        agentName: da.name,
+
+        columns: cols,
+
+        collectedAmount:
+          cash.get(cashDAId(da.emp)) || 0
+
+      };
+
+    });
+
+  } catch (err) {
+
+    setUploadMsg(
+      'Cash calculation failed: ' +
+      err.message,
+      'error'
+    );
+
+    return;
+
+  }
+
 
   const btn =
     document.getElementById('uploadSheetBtn');
@@ -621,8 +793,10 @@ async function uploadToSheet() {
     btn ? btn.textContent : '';
 
   if (btn) {
+
     btn.disabled = true;
     btn.textContent = 'Uploading…';
+
   }
 
   setUploadMsg(
@@ -630,8 +804,11 @@ async function uploadToSheet() {
     'info'
   );
 
+
   try {
+
     const res = await fetch(SHEET_UPLOAD_URL, {
+
       method: 'POST',
 
       headers: {
@@ -642,11 +819,13 @@ async function uploadToSheet() {
         tabName,
         records
       })
+
     });
 
     const data = await res.json();
 
     if (!data.ok) {
+
       setUploadMsg(
         'Upload ব্যর্থ: ' +
         (data.error || 'Unknown error'),
@@ -654,22 +833,35 @@ async function uploadToSheet() {
       );
 
       return;
+
     }
 
     let msg =
       `✓ "${tabName}" ট্যাবে ${data.updated.length} জন DA আপডেট হয়েছে।`;
 
     if (data.skipped && data.skipped.length) {
+
       msg +=
-        ` স্কিপ হয়েছে (row মেলেনি): ${data.skipped.join(', ')}`;
+        ` স্কিপ হয়েছে: ${data.skipped.join(', ')}`;
+
     }
 
     if (data.failed && data.failed.length) {
+
       msg +=
-        ` ব্যর্থ হয়েছে (আবার Upload চাপো): ${data.failed.join('; ')}`;
+        ` ব্যর্থ হয়েছে: ${data.failed.join('; ')}`;
+
+    }
+
+    if (data.executionTime) {
+
+      msg +=
+        ` | Time: ${data.executionTime}`;
+
     }
 
     setUploadMsg(
+
       msg,
 
       (data.failed && data.failed.length)
@@ -677,43 +869,59 @@ async function uploadToSheet() {
         : (data.skipped && data.skipped.length)
           ? 'warn'
           : 'success'
+
     );
 
   } catch (err) {
+
     setUploadMsg(
       'Upload ব্যর্থ: ' + err.message,
       'error'
     );
 
   } finally {
+
     if (btn) {
+
       btn.disabled = false;
       btn.textContent = originalLabel;
+
     }
+
   }
+
 }
+
+
+/* INITIALIZE */
 
 document.addEventListener(
   'DOMContentLoaded',
   () => {
+
     const sheetDate =
       document.getElementById('sheetDate');
 
     if (sheetDate && !sheetDate.value) {
+
       const now = new Date();
 
       sheetDate.value =
         `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
     }
 
     const uploadBtn =
       document.getElementById('uploadSheetBtn');
 
     if (uploadBtn) {
+
       uploadBtn.addEventListener(
         'click',
         uploadToSheet
       );
+
     }
+
   }
 );
