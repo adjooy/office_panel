@@ -149,7 +149,18 @@ html,body{margin:0!important;padding:0!important;width:100%;height:100%;overflow
 .ops-topbar .ops-menu button.active:hover{background:#4f67ed;color:white}
 @media(max-width:600px){#appRoot .ops-topbar{gap:6px;padding:5px 6px}.ops-topbar-brand{font-size:11px}.ops-topbar .top-logout{font-size:11px;padding:6px}}
 </style>
-</head>
+<style>
+.todo-head,.todo-add,.todo-row,.todo-progress-label{display:flex;align-items:center;gap:10px}.todo-head{justify-content:space-between;flex-wrap:wrap}.todo-head h2{margin:0;font-size:20px}.todo-head input,.todo-add input{border:1px solid #dce3f2;border-radius:9px;padding:10px;font:inherit;color:#172442;background:#fff}.todo-add{margin:14px 0}.todo-add input{flex:1;min-width:0}.todo-card button{border:0;border-radius:8px;padding:9px 12px;cursor:pointer;font:inherit;background:#4f67ed;color:white}.todo-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.todo-stats div{background:#f4f7fc;padding:12px;border-radius:10px;font-size:12px}.todo-stats b{display:block;font-size:23px;margin-top:5px}.todo-progress{height:8px;background:#e8edf5;border-radius:10px;overflow:hidden;margin:8px 0}.todo-progress div{height:100%;background:#15965e;transition:width .2s}.todo-progress-label{justify-content:space-between;font-size:13px}.todo-row{padding:10px 0;border-bottom:1px solid #edf0f5}.todo-row label{flex:1;display:flex;align-items:center;gap:9px;overflow-wrap:anywhere;min-width:0}.todo-row input{accent-color:#15965e;width:18px;height:18px;flex-shrink:0}.todo-row.done span{text-decoration:line-through;color:#8491a5}.todo-row button{background:#fff0f0;color:#b42335;font-size:12px}.todo-card .workspace-account{margin-top:10px}
+</style>
+<style>
+#appRoot .ops-topbar{display:grid;grid-template-columns:minmax(max-content,1fr) minmax(0,max-content) minmax(max-content,1fr);align-items:center}
+#appRoot .ops-topbar .ops-menu{justify-self:center;width:100%;justify-content:safe center}
+#appRoot .ops-topbar .top-logout{justify-self:end}
+.todo-row .daily-tag{font-size:11px;color:#64748b;flex-shrink:0}
+</style>
+<style>
+.todo-sort-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0}.todo-sort-actions [hidden]{display:none!important}.todo-sort-actions small{color:#64748b}.todo-sort-actions #todoSortSave{background:#15803d}.todo-sort-actions #todoSortCancel,.todo-row .sort-arrow{background:#eef2ff;color:#3346a0}.todo-row .sort-arrow{padding:5px 10px;font-size:16px}.todo-row button:disabled{opacity:.35;cursor:default}.todo-row .sort-rank{font-size:12px;color:#64748b;min-width:20px}
+</style></head>
 <body>
 
 
@@ -282,6 +293,13 @@ html,body{margin:0!important;padding:0!important;width:100%;height:100%;overflow
    <div class="workspace-card"><div class="workspace-label">Operational tools</div><div class="workspace-value" id="workspaceToolCount"></div><div class="workspace-account">Ready to use from the top menu</div></div>
    <div class="workspace-card"><div class="workspace-label">Account status</div><div class="workspace-value" style="color:#15803d">Authenticated</div><div class="workspace-account" id="workspaceAccount"></div></div>
   </div>
+<section class="workspace-card todo-card" aria-label="Daily to-do list">
+<div class="todo-head"><div><h2>Daily To-Do List</h2><div class="workspace-account">Daily reset at 6:00 AM · Bangladesh time</div></div><input type="date" id="todoDate" aria-label="Task date"></div>
+<div class="todo-stats"><div>Total Tasks<b id="todoTotal">0</b></div><div>Completed<b id="todoDone" style="color:#15803d">0</b></div><div>Pending<b id="todoPending" style="color:#b45309">0</b></div></div>
+<div class="todo-progress-label"><span>Daily progress</span><strong id="todoPercent">0%</strong></div><div class="todo-progress"><div id="todoBar" style="width:0%"></div></div>
+<form id="todoForm" class="todo-add"><input id="todoInput" placeholder="Enter a new task..." maxlength="500" required aria-label="New task"><button type="submit">+ Add Task</button></form>
+<div class="todo-sort-actions"><button type="button" id="todoSort">↕ Sort Tasks</button><button type="button" id="todoSortSave" hidden>Save Sort</button><button type="button" id="todoSortCancel" hidden>Cancel</button><small id="todoSortHint"></small></div><div id="todoList"></div><div class="workspace-account" id="todoStatus" aria-live="polite"></div>
+</section>
   <div class="workspace-card"><strong>Personal Quick Notes</strong><textarea id="workspaceNotes" placeholder="Write your important notes here..." aria-label="Personal quick notes"></textarea><div class="workspace-account" id="workspaceNoteStatus">Saved locally in this browser.</div></div>
   <div class="workspace-quote" id="workspaceQuote"></div>
   <footer><strong>AD JOY PANEL</strong><br>Operations Management System<br>Designed &amp; Developed by AD Joy | @adjoy.me</footer>
@@ -315,15 +333,58 @@ const fbAuth = firebase.auth();
 fbAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 
+const DAILY_TASKS = [
+ 'Payment Mail', 'Customer Return Check', 'Customer Change Check',
+ 'OSD Sheet Check', 'Return Mail', 'Assign Sheet Update',
+ 'Tracking Sheet Yesterday Parcel Update', 'Tracking Sheet New Parcel Update',
+ 'Van In & Out Time', 'DA Attendance'
+];
+let todoTimer;
+function todoWorkDate(now = new Date()) {
+ // Bangladesh UTC+6, with the workday beginning at 06:00.
+ // The two offsets cancel, so the UTC calendar date is the workday key.
+ return now.toISOString().slice(0,10);
+}
+function initTodo(user){
+ const el=id=>document.getElementById(id), date=el('todoDate'), form=el('todoForm'), input=el('todoInput'), list=el('todoList');
+ let activeDay=todoWorkDate(); date.value=activeDay; date.max=activeDay;
+ let tasks=[], storageOK=true, sorting=false, snapshot=[];
+ const orderKey='opsTodoOrder:'+user.uid;
+ const sortBtn=el('todoSort'), sortSave=el('todoSortSave'), sortCancel=el('todoSortCancel');
+ function dailyOrder(){try{const saved=JSON.parse(localStorage.getItem(orderKey)||'[]');const valid=Array.isArray(saved)?[...new Set(saved.filter(n=>DAILY_TASKS.includes(n)))]:[];return valid.concat(DAILY_TASKS.filter(n=>!valid.includes(n)));}catch(e){return [...DAILY_TASKS];}}
+ function sortControls(){sortBtn.hidden=sorting;sortBtn.disabled=date.value!==activeDay;sortSave.hidden=!sorting;sortCancel.hidden=!sorting;date.disabled=sorting;input.disabled=sorting;form.querySelector('button').disabled=sorting;el('todoSortHint').textContent=sorting?'Use ↑ ↓ to set daily priority, then Save Sort.':'Saved order repeats every day.';}
+ sortBtn.onclick=()=>{if(date.value!==activeDay)return;snapshot=tasks.slice();sorting=true;render();};
+ sortCancel.onclick=()=>{tasks=snapshot;sorting=false;render();};
+ sortSave.onclick=()=>{try{localStorage.setItem(orderKey,JSON.stringify(tasks.filter(t=>t.daily).map(t=>t.name)));}catch(e){el('todoSortHint').textContent='Unable to save order. Please enable local storage.';return;}sorting=false;save();};
+ const key=()=> 'opsTodo:'+user.uid+':'+date.value;
+ const normalize=name=>String(name||'').trim().toLowerCase().replace(/yestarday/g,'yesterday').replace(/attandance/g,'attendance');
+ function render(){
+  sortControls(); list.replaceChildren(); const done=tasks.filter(t=>t.done).length, pct=tasks.length?Math.round(done/tasks.length*100):0;
+  el('todoTotal').textContent=tasks.length;el('todoDone').textContent=done;el('todoPending').textContent=tasks.length-done;el('todoPercent').textContent=pct+'%';el('todoBar').style.width=pct+'%';
+  tasks.forEach((task,i)=>{const row=document.createElement('div');row.className='todo-row'+(task.done?' done':'');const label=document.createElement('label'), check=document.createElement('input'), text=document.createElement('span');check.type='checkbox';check.checked=task.done;check.disabled=sorting;text.textContent=task.name;check.onchange=()=>{task.done=check.checked;save();};label.append(check,text);row.append(label);if(task.daily){const tag=document.createElement('small');tag.className='daily-tag';tag.textContent='Daily';row.append(tag);if(sorting){const rank=document.createElement('small');rank.className='sort-rank';rank.textContent=String(i+1);row.prepend(rank);[-1,1].forEach(step=>{const btn=document.createElement('button');btn.type='button';btn.className='sort-arrow';btn.textContent=step<0?'↑':'↓';btn.setAttribute('aria-label',(step<0?'Move up: ':'Move down: ')+task.name);const target=i+step;btn.disabled=target<0||target>=tasks.length||!tasks[target].daily;btn.onclick=()=>{[tasks[i],tasks[target]]=[tasks[target],tasks[i]];render();};row.append(btn);});}}else{const del=document.createElement('button');del.type='button';del.disabled=sorting;del.textContent='Delete';del.onclick=()=>{if(confirm('Delete this task?')){tasks.splice(i,1);save();}};row.append(del);}list.append(row);});
+  el('todoStatus').textContent=!storageOK?'Local storage unavailable — changes may not be saved.':!tasks.length?'No saved tasks for this date.':done===tasks.length?'All tasks completed! · Saved on this browser.':(tasks.length-done)+' tasks remaining · Saved on this browser.';
+ }
+ function load(){if(!date.value)return;try{const data=JSON.parse(localStorage.getItem(key())||'[]');tasks=Array.isArray(data)?data:[];storageOK=true;}catch(e){tasks=[];storageOK=false;}
+  if(date.value===activeDay){const old=tasks;tasks=dailyOrder().map(name=>({name,done:old.some(t=>normalize(t.name)===normalize(name)&&t.done),daily:true})).concat(old.filter(t=>!DAILY_TASKS.some(name=>normalize(name)===normalize(t.name))));save();}else render();
+ }
+ function save(){try{localStorage.setItem(key(),JSON.stringify(tasks));storageOK=true;}catch(e){storageOK=false;}render();}
+ function rollover(){const next=todoWorkDate();if(next!==activeDay){sorting=false;activeDay=next;date.max=next;date.value=next;load();}}
+ date.onchange=()=>{if(date.value>activeDay)date.value=activeDay;load();};form.onsubmit=e=>{e.preventDefault();rollover();const name=input.value.trim();if(!name||!date.value)return;tasks.push({name,done:false});input.value='';save();input.focus();};load();
+ todoTimer=setInterval(rollover,1000);
+}
+function stopTodo(){clearInterval(todoTimer);['todoSort','todoSortSave','todoSortCancel'].forEach(id=>document.getElementById(id).onclick=null);document.getElementById('todoForm').onsubmit=null;document.getElementById('todoDate').onchange=null;document.getElementById('todoInput').value='';document.getElementById('todoList').replaceChildren();}
+
 let workspaceTimer;
 function stopWorkspace(){
  clearInterval(workspaceTimer);
+ stopTodo();
  const notes=document.getElementById('workspaceNotes');
  notes.oninput=null; notes.value='';
  document.getElementById('workspaceAccount').textContent='';
 }
 function initWorkspace(user){
  stopWorkspace();
+ initTodo(user);
  const el=id=>document.getElementById(id);
  el('workspaceAccount').textContent=user.email||user.displayName||'Signed in';
  el('workspaceToolCount').textContent=String(document.querySelectorAll('.ops-menu .dash-tool').length).padStart(2,'0');
