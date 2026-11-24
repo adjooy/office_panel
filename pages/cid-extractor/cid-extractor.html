@@ -1,13 +1,96 @@
+
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>CID Extractor</title>
+
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="cid-extractor.css">
+
+<style>
+
+.cid-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+  width: 100%;
+}
+
+.cid-left,
+.cid-right {
+  min-width: 0;
+  width: 100%;
+}
+
+.cid-card {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.cid-layout .cid-textarea,
+.cid-layout .cid-output {
+  display: block;
+  width: 100%;
+  height: 420px;
+  min-height: 420px;
+  margin: 0;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.cid-layout .cid-info {
+  min-height: 44px;
+  margin-bottom: 12px;
+}
+
+.cid-layout .cid-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.cid-layout .cid-copy {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+.cid-layout .form-title {
+  margin-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+
+  .cid-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .cid-layout .cid-textarea,
+  .cid-layout .cid-output {
+    height: 300px;
+    min-height: 300px;
+  }
+
+  .cid-layout .cid-info {
+    min-height: auto;
+  }
+
+}
+
+</style>
+
 </head>
+
 <body>
+
 <div class="page-content">
 
   <div class="page-head">
@@ -29,74 +112,98 @@
 
   <div class="card cid-card">
 
-    <div class="form-title">
-      Random Text
-    </div>
-
-    <div class="cid-info">
-      Paste your complete text below. The extractor will find only valid
-      CID numbers and remove duplicate CIDs automatically.
-    </div>
+    <div class="cid-layout">
 
 
-    <textarea
-      id="cidInput"
-      class="cid-textarea"
-      placeholder="Paste random text here...
-"
-    ></textarea>
+      <!-- LEFT SIDE: RANDOM TEXT INPUT -->
+
+      <div class="cid-left">
+
+        <div class="form-title">
+          Random Text
+        </div>
+
+        <div class="cid-info">
+          Paste your complete text below. The extractor will find only valid
+          CID numbers and remove duplicate CIDs automatically.
+        </div>
+
+        <textarea
+          id="cidInput"
+          class="cid-textarea"
+          placeholder="Paste random text here..."
+        ></textarea>
+
+        <div class="cid-actions">
+
+          <button
+            class="btn btn-dark"
+            id="extractCidBtn"
+          >
+            CID বের করুন
+          </button>
+
+          <button
+            class="btn btn-light"
+            id="clearCidBtn"
+          >
+            Clear
+          </button>
+
+          <span
+            class="cid-count"
+            id="cidCount"
+          >
+            0 unique CID পাওয়া গেছে
+          </span>
+
+        </div>
+
+      </div>
 
 
-    <div class="cid-actions">
+      <!-- RIGHT SIDE: EXTRACTED CID OUTPUT -->
 
-      <button
-        class="btn btn-dark"
-        id="extractCidBtn"
-      >
-        CID বের করুন
-      </button>
+      <div class="cid-right">
 
-      <button
-        class="btn btn-light"
-        id="clearCidBtn"
-      >
-        Clear
-      </button>
+        <div class="form-title">
+          Extracted CID List
+        </div>
 
-      <span
-        class="cid-count"
-        id="cidCount"
-      >
-        0 unique CID পাওয়া গেছে
-      </span>
+        <div class="cid-info">
+          All unique Consignment IDs will appear below.
+          Copy the complete CID list with one click.
+        </div>
 
-    </div>
+        <textarea
+          id="cidOutput"
+          class="cid-output"
+          readonly
+          placeholder="Extracted CID list will appear here..."
+        ></textarea>
 
+        <div class="cid-actions">
 
-    <textarea
-      id="cidOutput"
-      class="cid-output"
-      readonly
-      placeholder="Extracted CID list will appear here..."
-    ></textarea>
+          <button
+            class="btn cid-copy"
+            id="copyCidBtn"
+          >
+            Copy CID List
+          </button>
 
+        </div>
 
-    <div class="cid-actions">
+      </div>
 
-      <button
-        class="btn cid-copy"
-        id="copyCidBtn"
-      >
-        Copy CID List
-      </button>
 
     </div>
 
   </div>
 
-
 </div>
+
 <script src="../../assets/js/common.js"></script>
 <script src="cid-extractor.js"></script>
+
 </body>
 </html>
