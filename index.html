@@ -121,6 +121,22 @@ html,body{margin:0!important;padding:0!important;width:100%;height:100%;overflow
 .viewer-frame{display:block;flex:1;width:100%;height:0;min-height:0;margin:0;padding:0;border:0}
 .viewer-frame[hidden],.ops-dashboard[hidden]{display:none!important}
 </style>
+<style>
+.workspace{max-width:1000px;width:100%;margin:0 auto;display:grid;gap:16px;box-sizing:border-box;color:#172442}
+.workspace-card{background:#fff;border:1px solid #e3e9f4;border-radius:16px;padding:22px;min-width:0}
+.workspace-welcome{background:linear-gradient(115deg,#1e3264,#4f67ed);color:white;padding:28px}
+.workspace-welcome h1{margin:8px 0;font-size:clamp(24px,4vw,36px)}
+.workspace-welcome p{margin:0;color:#e1e8ff}
+.workspace-clock{font-size:clamp(32px,6vw,56px);font-weight:750;font-variant-numeric:tabular-nums;margin-top:22px}
+.workspace-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.workspace-label{font-size:12px;letter-spacing:1px;text-transform:uppercase;opacity:.8}
+.workspace-value{font-size:24px;font-weight:750;margin:10px 0 4px;overflow-wrap:anywhere}
+.workspace-account{font-size:13px;color:#64748b;overflow-wrap:anywhere}
+.workspace textarea{display:block;width:100%;box-sizing:border-box;min-height:110px;resize:vertical;padding:12px;border:1px solid #dce3f2;border-radius:10px;font:inherit;margin:12px 0 6px;background:#f8faff;color:#172442}
+.workspace-quote{text-align:center;background:#e8edfc;color:#35477d;padding:18px;border-radius:14px;font-style:italic}
+.workspace footer{text-align:center;color:#64748b;font-size:12px;line-height:1.7;padding:8px}
+@media(max-width:560px){.workspace-grid{grid-template-columns:1fr}.workspace-card{padding:16px}}
+</style>
 </head>
 <body>
 
@@ -242,10 +258,22 @@ html,body{margin:0!important;padding:0!important;width:100%;height:100%;overflow
   <button class="dash-tool" data-open="pages/return-hold-verification/return-hold-verification.html" style="--tint:#fff5dd;--tone:#bc8a1e"><span class="tool-icon">☑</span><strong>Backlogs Analysis</strong></button>
  </nav>
 <section id="dashHome" class="ops-dashboard" aria-label="Dashboard home">
- <header class="dash-top"><div><div class="dash-eyebrow">Operations Workspace</div><h1>Dashboard Overview</h1><p>Everything you need to manage daily operations, in one place.</p></div><div class="dash-date" id="dashDate"></div></header>
- <div class="dash-hero"><div><h2>Welcome to your workspace</h2><p>Choose a tool from the top menu to open it instantly. Your existing pages and data workflows remain unchanged.</p></div><div class="dash-hero-icon" aria-hidden="true">◈</div></div>
- 
- <footer class="dash-foot">This Panel is Created By AD Joy | @adjoy.me</footer>
+ <div class="workspace">
+  <header class="workspace-card workspace-welcome">
+   <div class="workspace-label">Your personal workspace</div>
+   <h1 id="workspaceGreeting">Welcome back!</h1>
+   <p>Welcome to your Operations Management Panel.</p>
+   <div class="workspace-clock" id="workspaceClock"></div>
+   <div id="dashDate"></div>
+  </header>
+  <div class="workspace-grid">
+   <div class="workspace-card"><div class="workspace-label">Operational tools</div><div class="workspace-value" id="workspaceToolCount"></div><div class="workspace-account">Ready to use from the top menu</div></div>
+   <div class="workspace-card"><div class="workspace-label">Account status</div><div class="workspace-value" style="color:#15803d">Authenticated</div><div class="workspace-account" id="workspaceAccount"></div></div>
+  </div>
+  <div class="workspace-card"><strong>Personal Quick Notes</strong><textarea id="workspaceNotes" placeholder="Write your important notes here..." aria-label="Personal quick notes"></textarea><div class="workspace-account" id="workspaceNoteStatus">Saved locally in this browser.</div></div>
+  <div class="workspace-quote" id="workspaceQuote"></div>
+  <footer><strong>AD JOY PANEL</strong><br>Operations Management System<br>Designed &amp; Developed by AD Joy | @adjoy.me</footer>
+ </div>
 </section>
   <iframe id="viewer" class="viewer-frame" title="Panel content" src="about:blank" hidden></iframe>
 </main>
@@ -273,6 +301,34 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const fbAuth = firebase.auth();
 fbAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+
+let workspaceTimer;
+function stopWorkspace(){
+ clearInterval(workspaceTimer);
+ const notes=document.getElementById('workspaceNotes');
+ notes.oninput=null; notes.value='';
+ document.getElementById('workspaceAccount').textContent='';
+}
+function initWorkspace(user){
+ stopWorkspace();
+ const el=id=>document.getElementById(id);
+ el('workspaceAccount').textContent=user.email||user.displayName||'Signed in';
+ el('workspaceToolCount').textContent=String(document.querySelectorAll('.ops-menu .dash-tool').length).padStart(2,'0');
+ const notes=el('workspaceNotes'), key='opsNotes:'+user.uid;
+ try{notes.value=localStorage.getItem(key)||'';el('workspaceNoteStatus').textContent='Saved locally in this browser.';}catch(e){el('workspaceNoteStatus').textContent='Local storage unavailable.';}
+ notes.oninput=()=>{try{localStorage.setItem(key,notes.value);el('workspaceNoteStatus').textContent='All changes saved locally.';}catch(e){el('workspaceNoteStatus').textContent='Unable to save notes.';}};
+ const quotes=['Stay organized. Work smarter.','Small steps make big progress.','Focus on what matters.','Consistency builds success.','Make today productive.','Progress is better than perfection.','Good planning makes work easier.'];
+ function tick(){
+  const now=new Date(), h=now.getHours();
+  el('workspaceGreeting').textContent=h<12?'Good Morning!':h<17?'Good Afternoon!':'Good Evening!';
+  el('workspaceClock').textContent=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
+  el('dashDate').textContent=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const day=Math.floor(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())/86400000);
+  el('workspaceQuote').textContent=quotes[day%quotes.length];
+ }
+ tick();workspaceTimer=setInterval(tick,1000);
+}
 
 const Auth = (() => {
   function showError(msg){
@@ -327,8 +383,10 @@ const Auth = (() => {
       document.getElementById('appRoot').classList.remove('hidden');
       const label = document.getElementById('accountEmailLabel');
       if(label) label.textContent = user.displayName ? `${user.displayName} · ${user.email}` : user.email;
+      initWorkspace(user);
       initPanel();
     } else {
+      stopWorkspace();
       document.getElementById('appRoot').classList.add('hidden');
       document.getElementById('authScreen').classList.remove('hidden');
     }
@@ -350,10 +408,6 @@ function initPanel(){
   const dateEl = document.getElementById('dashDate');
   const tools = [...document.querySelectorAll('.dash-tool')];
   const paths = new Set(tools.map(el=>el.dataset.open));
-  if(dateEl) dateEl.textContent = new Intl.DateTimeFormat('en-GB',{
-    weekday:'short',day:'numeric',month:'long',year:'numeric'
-  }).format(new Date());
-
   function currentRoute(){
     const params = new URLSearchParams(location.hash.replace(/^#/, ''));
     const page = params.get('page');
