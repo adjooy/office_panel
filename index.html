@@ -492,7 +492,13 @@ function initPanel(){
   function setFramePage(page){
     if(displayedPage === page) return;
     displayedPage = page;
-    const url = page ? new URL(page, document.baseURI).href : 'about:blank';
+    const url = page ? (() => {
+      const target = new URL(page, document.baseURI);
+      if (target.pathname.endsWith('/pages/cid-extractor/cid-extractor.html')) {
+        target.searchParams.set('v', '20261128-extractor-runtime-fix-1');
+      }
+      return target.href;
+    })() : 'about:blank';
     try {
       viewer.contentWindow.location.replace(url);
     } catch(e) {
